@@ -7,26 +7,29 @@ from pathlib import Path
 
 import actualizar_dashboard as p
 
-# Minutos: cada ejecución se redondea hacia arriba (como factura GitHub); las que siguen en curso no cuentan.
-runs = [
-    {"status": "completed", "run_started_at": "2026-11-01T12:00:00Z", "updated_at": "2026-11-01T12:00:20Z"},  # 1
-    {"status": "completed", "run_started_at": "2026-11-01T13:00:00Z", "updated_at": "2026-11-01T13:13:01Z"},  # 14
-    {"status": "in_progress", "run_started_at": "2026-11-01T14:00:00Z", "updated_at": "2026-11-01T14:30:00Z"},
-]
-assert p.minutos_facturables(runs) == 15, p.minutos_facturables(runs)
-
 # Valores editados a mano en el navegador no llegan a la URL de la API si no tienen forma de repo/workflow.
 os.environ["GH_PAT"] = "x"
-ahora = dt.datetime(2026, 11, 22, tzinfo=dt.timezone.utc)
-assert "no válido" in p.datos_github({"repo": "a/b/../c", "workflow": "x.yml"}, ahora)["error"]
-assert "no válido" in p.datos_github({"repo": "a/b", "workflow": "x.yml?evil=1"}, ahora)["error"]
+assert "no válido" in p.datos_github({"repo": "a/b/../c", "workflow": "x.yml"})["error"]
+assert "no válido" in p.datos_github({"repo": "a/b", "workflow": "x.yml?evil=1"})["error"]
 
-# Render: un título con </script> no puede cerrar el bloque de datos; config y datos vuelven intactos.
+# Histórico: la última lectura del día manda, un canal con error no borra su dato previo y no se anotan días vacíos.
+h = {"2026-11-21": {"A": {"suscriptores": 1, "vistas": 10}}}
+ok = lambda s, v: {"gh": {}, "yt": {"suscriptores": s, "vistas": v}}
+mal = {"gh": {}, "yt": {"error": "x"}}
+h = p.anotar_historico(h, {"A": ok(2, 20), "B": mal}, "2026-11-22")
+h = p.anotar_historico(h, {"A": mal, "B": ok(5, 50)}, "2026-11-22")
+assert h == {"2026-11-21": {"A": {"suscriptores": 1, "vistas": 10}},
+             "2026-11-22": {"A": {"suscriptores": 2, "vistas": 20}, "B": {"suscriptores": 5, "vistas": 50}}}, h
+assert "2026-11-23" not in p.anotar_historico(h, {"A": mal}, "2026-11-23")
+assert list(p.anotar_historico({"2026-11-23": {}, "2026-11-01": {"A": {}}}, {"A": ok(1, 1)}, "2026-11-15")) == \
+    ["2026-11-01", "2026-11-15", "2026-11-23"]
+
+# Render: un texto con </script> no puede cerrar los bloques de datos; config, datos e histórico vuelven intactos.
 config = json.loads((Path(__file__).parent / "config.json").read_text(encoding="utf-8"))
 malo = "</script><script>alert(1)</script>"
-datos = {"Archivo Cero": {"gh": {"error": "Falta GH_PAT"}, "yt": {"videos": [{"titulo": malo}]}}}
-salida = p.generar_html(config, datos, ahora)
-assert malo not in salida and "__" not in re.sub(r"<script>.*?</script>", "", salida, flags=re.S).split("<body>")[1]
+datos = {"Archivo Cero": {"gh": {"error": malo}, "yt": {"error": "Falta YT_API_KEY"}}}
+salida = p.generar_html(config, datos, h, dt.datetime(2026, 11, 22, tzinfo=dt.timezone.utc))
+assert malo not in salida and "__" not in re.sub(r"<script.*?</script>", "", salida, flags=re.S)
 bloque = lambda i: json.loads(re.search(rf'id="{i}">(.*?)</script>', salida, re.S).group(1))
-assert bloque("config-json") == config and bloque("datos-json") == datos
+assert bloque("config-json") == config and bloque("datos-json") == datos and bloque("historico-json") == h
 print("OK")

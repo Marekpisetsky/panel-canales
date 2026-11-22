@@ -8,13 +8,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # para guardar historico.json en el repo
   pages: write
   id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false  # cancelar a medias podría perder la lectura del día en historico.json
 
 jobs:
   publicar:
@@ -33,7 +33,7 @@ jobs:
       - name: Comprobaciones
         run: python test_dashboard.py
 
-      - name: Generar index.html
+      - name: Generar index.html y anotar el histórico
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
@@ -45,3 +45,14 @@ jobs:
 
       - id: despliegue
         uses: actions/deploy-pages@v4
+
+      # Los commits hechos con GITHUB_TOKEN no vuelven a lanzar este workflow, así que no hay bucle.
+      - name: Guardar historico.json en el repositorio
+        run: |
+          git config user.name "panel-canales-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add historico.json
+          if git diff --cached --quiet; then echo "Histórico sin cambios"; exit 0; fi
+          git commit -m "Histórico: $(date -u +%F)"
+          for intento in 1 2 3; do git pull --rebase && git push && exit 0; sleep 10; done
+          exit 1
