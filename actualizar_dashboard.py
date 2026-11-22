@@ -96,7 +96,8 @@ def datos_youtube(canal):
         "suscriptores": None if s.get("hiddenSubscriberCount") else int(s.get("subscriberCount", 0)),
         "vistas": int(s.get("viewCount", 0)),
         "id": items[0]["id"],
-        "videos": ultimos_videos(items[0]["contentDetails"]["relatedPlaylists"]["uploads"]),
+        # sin videos públicos la lista de subidas no existe (404 playlistNotFound)
+        "videos": ultimos_videos(items[0]["contentDetails"]["relatedPlaylists"]["uploads"]) if int(s.get("videoCount", 0)) else [],
     }
 
 
