@@ -25,8 +25,8 @@
       "nombre": "Vector Cero",
       "color": "#7aa2ff",
       "youtube": "@VectorCeroES",
-      "workflow": "vector_cero.yml",
-      "repo": "vectorcero/vector-cero"
+      "repo": "vectorcero/vector-cero",
+      "workflow": "vector_cero.yml"
     },
     {
       "nombre": "Canal 4",
