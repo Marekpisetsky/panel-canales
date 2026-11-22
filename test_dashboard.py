@@ -38,6 +38,9 @@ assert p.datos_analytics({"nombre": "A"}, {"id": "UC"}, None) == {"error": "Anal
 os.environ["YT_ANALYTICS_TOKENS_JSON"] = "{roto"
 assert "no es JSON" in p.datos_analytics({"nombre": "A"}, {"id": "UC"}, None)["error"]
 
+# Duraciones ISO 8601 de YouTube.
+assert [p.segundos(x) for x in ("PT45S", "PT1M5S", "PT1H0M2S", "P1DT1S", "P0D", "PT", "")] == [45, 65, 3602, 86401, 0, None, None]
+
 # Render: un texto con </script> no puede cerrar los bloques de datos; config, datos e histórico vuelven intactos.
 config = json.loads((Path(__file__).parent / "config.json").read_text(encoding="utf-8"))
 malo = "</script><script>alert(1)</script>"

@@ -106,11 +106,18 @@ def ultimos_videos(lista_subidas, n=5):
            for i in youtube("playlistItems", part="contentDetails", playlistId=lista_subidas, maxResults=n).get("items", [])]
     if not ids:
         return []
-    vids = youtube("videos", part="snippet,statistics", id=",".join(ids)).get("items", [])
+    vids = youtube("videos", part="snippet,statistics,contentDetails", id=",".join(ids)).get("items", [])
     return sorted(({"id": v["id"], "titulo": v["snippet"]["title"], "fecha": v["snippet"]["publishedAt"],
+                    "duracion": segundos(v["contentDetails"].get("duration", "")),
                     "vistas": int(v["statistics"].get("viewCount", 0)),
                     "likes": int(v["statistics"]["likeCount"]) if "likeCount" in v["statistics"] else None}
                    for v in vids), key=lambda v: v["fecha"], reverse=True)
+
+
+def segundos(iso):
+    """Duración ISO 8601 de YouTube (PT1H2M3S) → segundos; None si no se reconoce."""
+    m = re.fullmatch(r"P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", iso)
+    return None if not m or not iso.strip("PT") else sum(int(n or 0) * k for n, k in zip(m.groups(), (86400, 3600, 60, 1)))
 
 
 def datos_analytics(canal, yt, ahora):
@@ -137,7 +144,19 @@ def datos_analytics(canal, yt, ahora):
     # un video sin vistas en los 28 días no aparece y queda sin retención
     por_video = {f["video"]: round(f["averageViewPercentage"], 1)
                  for f in informe(dimensions="video", metrics="views,averageViewPercentage", sort="-views", maxResults=200)}
+    curvas = {}
+    for v in yt["videos"]:
+        if v["id"] not in por_video:
+            continue  # sin vistas en 28 días no hay curva
+        try:  # una curva que falle no se lleva la retención del canal
+            # audienceWatchRatio: fracción de espectadores que sigue viendo en cada 1 % del video (>1 si se re-ve)
+            puntos = informe(dimensions="elapsedVideoTimeRatio", metrics="audienceWatchRatio", filters=f"video=={v['id']}")
+        except RuntimeError:
+            continue
+        if puntos:
+            curvas[v["id"]] = [[f["elapsedVideoTimeRatio"], round(f["audienceWatchRatio"], 3)] for f in puntos]
     return {
+        "curvas": curvas,
         "retencion": None if total.get("averageViewPercentage") is None else round(total["averageViewPercentage"], 1),
         "duracion": total.get("averageViewDuration"),
         "por_video": {v["id"]: por_video[v["id"]] for v in yt["videos"] if v["id"] in por_video},

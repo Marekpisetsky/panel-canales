@@ -59,6 +59,12 @@ td:first-child a{text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-
 td:first-child a:hover{color:var(--cian)}
 td small{display:block;color:var(--tenue);font:11px var(--mono)}
 tr.mejor td.ret{color:var(--acento);font-weight:700}
+td.ret button{font:inherit;color:inherit;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px;margin:-3px -7px -3px 0;text-decoration:underline dotted 1px;text-underline-offset:3px}
+td.ret button:hover,td.ret button[aria-pressed=true]{border-color:var(--acento);text-decoration:none}
+.curva{margin-top:12px;padding-top:10px;border-top:1px solid var(--borde)}
+.curva .nota b{color:var(--texto);font-weight:600}
+.curva .fuga{color:var(--ambar)}
+.lienzo.bajo{height:180px;margin-top:6px}
 footer{color:var(--tenue);font-size:12px;text-align:center}
 /* editor */
 dialog{width:min(820px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:0;border:1px solid var(--borde);border-radius:16px;background:var(--panel);color:var(--texto)}
@@ -149,7 +155,14 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
   var copia = function (o) { return JSON.parse(JSON.stringify(o)); };
   var cifra = function (n) { return n == null ? "—" : Number(n).toLocaleString("es"); };
   var pct = function (n) { return n == null ? "—" : cifra(n) + " %"; };
-  var minutos = function (s) { return Math.floor(s / 60) + ":" + ("0" + Math.round(s % 60)).slice(-2); };
+  var minutos = function (s) { s = Math.round(s); return Math.floor(s / 60) + ":" + ("0" + s % 60).slice(-2); };
+  var momento = function (r, dur) { return dur ? minutos(r * dur) : Math.round(r * 100) + " %"; };
+  // tramo de 5 puntos (5 % del video) donde más audiencia se pierde
+  var fuga = function (pts) {
+    var W = 5, m = null;
+    for (var i = 0; i + W < pts.length; i++) { var c = pts[i][1] - pts[i + W][1]; if (!m || c > m.caida) m = {a: i, b: i + W, caida: c}; }
+    return m && m.caida > 0 ? m : null;
+  };
   var fecha = function (iso, opciones) {
     var d = new Date(iso);
     return isNaN(d) ? iso : d.toLocaleString(undefined, opciones || {day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"});
@@ -229,21 +242,57 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
     });
   }
 
-  // últimos 5 videos de cada canal, el de mayor retención arriba (los que aún no tienen dato, al final y por fecha)
+  // últimos 5 videos de cada canal, el de mayor retención arriba (los que aún no tienen dato, al final y por fecha);
+  // pulsar su % muestra debajo la curva de retención de ese video
+  var seleccion = {}, curvas = [];
   function pintarVideos() {
-    $("videos").innerHTML = activos().map(function (c) {
+    curvas.forEach(function (g) { g.destroy(); });
+    curvas = [];
+    var pendientes = [];
+    $("videos").innerHTML = activos().map(function (c, i) {
       var d = DATOS[c.nombre] || {yt: {}}, vids = (d.yt && d.yt.videos) || [], ret = (d.an && d.an.por_video) || {};
+      var cur = (d.an && d.an.curvas) || {};
       if (!vids.length) return "";
       vids = vids.slice().sort(function (a, b) { return (ret[b.id] == null ? -1 : ret[b.id]) - (ret[a.id] == null ? -1 : ret[a.id]); });
       var mejor = ret[vids[0].id] != null ? vids[0].id : null;
+      var elegido = vids.filter(function (v) { return cur[v.id] && (v.id === seleccion[c.nombre] || !cur[seleccion[c.nombre]]); })[0];
+      var curva = "";
+      if (elegido) {
+        var f = fuga(cur[elegido.id]), m = momento, dur = elegido.duracion;
+        curva = '<div class="curva"><p class="nota"><b>' + esc(elegido.titulo) + "</b> · " + (f ? '<span class="fuga">mayor fuga ' +
+          m(cur[elegido.id][f.a][0], dur) + "–" + m(cur[elegido.id][f.b][0], dur) + " (−" + Math.round(f.caida * 100) + " pts)</span>" : "sin caídas") +
+          '</p><div class="lienzo bajo"><canvas id="curva-' + i + '" role="img" aria-label="Curva de retención de ' + esc(elegido.titulo) + '"></canvas></div></div>';
+        pendientes.push({id: "curva-" + i, pts: cur[elegido.id], dur: dur, col: color(c.color), f: f});
+      }
       return '<div class="caja" style="--acento:' + color(c.color) + '"><h2>' + esc(c.nombre) + " · últimos videos</h2><table>" +
         "<thead><tr><th scope=\"col\">Video</th><th scope=\"col\">Vistas</th><th scope=\"col\">Likes</th><th scope=\"col\">Retención</th></tr></thead><tbody>" +
         vids.map(function (v) {
           return "<tr" + (v.id === mejor ? ' class="mejor"' : "") + '><td><a href="https://www.youtube.com/watch?v=' + encodeURIComponent(v.id) +
             '" target="_blank" rel="noopener">' + esc(v.titulo) + "</a><small>" + esc(fecha(v.fecha, {day: "2-digit", month: "short"})) + "</small></td>" +
-            "<td>" + cifra(v.vistas) + "</td><td>" + cifra(v.likes) + '</td><td class="ret">' + pct(ret[v.id]) + "</td></tr>";
-        }).join("") + "</tbody></table></div>";
+            "<td>" + cifra(v.vistas) + "</td><td>" + cifra(v.likes) + '</td><td class="ret">' + (cur[v.id] ? '<button type="button" data-accion="curva" data-canal="' + esc(c.nombre) + '" data-video="' + esc(v.id) +
+            '" aria-pressed="' + (elegido && v.id === elegido.id) + '" title="Ver la curva de retención">' + pct(ret[v.id]) + "</button>" : pct(ret[v.id])) + "</td></tr>";
+        }).join("") + "</tbody></table>" + curva + "</div>";
     }).join("");
+    if (!window.Chart) return;
+    pendientes.forEach(function (g) {
+      var enFuga = function (x) { return g.f && x.p0DataIndex >= g.f.a && x.p1DataIndex <= g.f.b; };
+      curvas.push(new Chart($(g.id), {
+        type: "line",
+        data: {
+          labels: g.pts.map(function (p) { return momento(p[0], g.dur); }),
+          datasets: [{data: g.pts.map(function (p) { return p[1] * 100; }), borderColor: g.col, borderWidth: 2, pointRadius: 0, tension: 0.2,
+            segment: {borderColor: function (x) { return enFuga(x) ? "#ffb547" : g.col; }, borderWidth: function (x) { return enFuga(x) ? 4 : 2; }}}]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false, interaction: {mode: "index", intersect: false},
+          plugins: {legend: {display: false}, tooltip: {callbacks: {label: function (x) { return " " + Math.round(x.parsed.y) + " % sigue viendo"; }}}},
+          scales: {
+            x: {ticks: {color: "#8b98a9", maxRotation: 0, autoSkip: true, maxTicksLimit: 7}, grid: {display: false}},
+            y: {beginAtZero: true, suggestedMax: 100, grid: {color: "#1e2633"}, ticks: {color: "#8b98a9", callback: function (v) { return v + " %"; }}}
+          }
+        }
+      }));
+    });
   }
 
   function pintar() {
@@ -316,6 +365,7 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
     if (!b) return;
     var accion = b.dataset.accion;
     if (accion === "sincronizar") return sincronizar();
+    if (accion === "curva") { seleccion[b.dataset.canal] = b.dataset.video; pintarVideos(); return; }
     if (accion === "cerrar") return $("editor").close();
     if (accion === "descartar") { cfg = copia(BASE); aviso(""); }
     if (accion === "nuevo") {
