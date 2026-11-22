@@ -1,0 +1,4 @@
+# index.html lo genera el workflow en cada despliegue; la copia local es solo vista previa
+index.html
+sitio/
+__pycache__/

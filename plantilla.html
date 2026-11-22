@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel de Canales</title>
+<style>
+:root{
+  --fondo:#07090d;--panel:#0e1219;--panel2:#131925;--borde:#1e2633;--texto:#e6edf3;--tenue:#8b98a9;
+  --cian:#38d3f5;--verde:#3ddc97;--rojo:#ff5d5d;--ambar:#ffb547;--gris:#5b6675;
+  --mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background-image:radial-gradient(circle at 20% -10%,#12324066,transparent 45%),linear-gradient(var(--borde) 1px,transparent 1px),linear-gradient(90deg,var(--borde) 1px,transparent 1px);
+  background-size:auto,48px 48px,48px 48px;background-attachment:fixed}
+a{color:inherit}
+code{font-family:var(--mono);font-size:.85em}
+.envoltorio{max-width:1240px;margin:0 auto;padding:24px 16px 48px}
+.cabecera{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+.cabecera h1{margin:0;font:600 13px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--cian)}
+.cabecera p{margin:6px 0 0;font-size:26px;font-weight:650;letter-spacing:-.01em}
+.cabecera small{display:block;color:var(--tenue);font-family:var(--mono);font-size:12px;margin-top:8px}
+.acciones{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+button{font:600 14px/1 system-ui,sans-serif;color:var(--texto);background:#0a0d13;border:1px solid var(--borde);border-radius:10px;padding:10px 14px;cursor:pointer}
+button:hover{border-color:var(--cian)}
+button.primario{background:var(--cian);color:#04121a;border-color:var(--cian)}
+button.peligro{color:var(--rojo);border-color:#ff5d5d55}
+.aviso{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;margin-bottom:16px;border:1px solid #ffb54766;border-radius:12px;background:#ffb54712;color:var(--ambar);font-size:14px}
+.aviso span{flex:1;min-width:200px}
+.resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
+.resumen>div,.canal{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--borde);border-radius:14px}
+.resumen>div{padding:14px 16px}
+.resumen b{display:block;font:600 24px/1.2 var(--mono)}
+.resumen small,.kpis small{color:var(--tenue);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.resumen .ancho{grid-column:1/-1}
+.barra{height:8px;border-radius:99px;background:#1a2230;overflow:hidden;margin-top:8px}
+.barra span{display:block;height:100%;border-radius:inherit}
+.barra.alerta span{background:var(--ambar)!important}
+.rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:16px}
+.canal{padding:18px;border-top:3px solid var(--acento);display:flex;flex-direction:column;gap:14px}
+.canal header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.canal h2{margin:0;font-size:19px;overflow-wrap:anywhere}
+.chip{flex:none;font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;padding:5px 8px;border-radius:99px;border:1px solid var(--acento);color:var(--acento)}
+.vacio{border-style:dashed;opacity:.6;min-height:160px}
+.robot{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:#0a0d13;border:1px solid var(--borde);text-decoration:none}
+.robot div{flex:1;min-width:0}
+.robot b{display:block}
+.robot small{color:var(--tenue);font-size:12px}
+.robot i{font-style:normal;font-size:12px;color:var(--cian);white-space:nowrap}
+a.robot:hover{border-color:var(--cian)}
+.led{width:12px;height:12px;border-radius:50%;flex:none;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 20%,transparent),0 0 14px var(--c)}
+.verde{--c:var(--verde)}.rojo{--c:var(--rojo)}.ambar{--c:var(--ambar)}.gris{--c:var(--gris)}
+.robot.rojo{border-color:#ff5d5d66}
+.ambar .led{animation:latido 1.2s infinite}
+@keyframes latido{50%{opacity:.35}}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14px}
+dt{color:var(--tenue);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+dd{margin:0;overflow-wrap:anywhere}
+.consumo small{color:var(--tenue);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.kpis div{background:#0a0d13;border:1px solid var(--borde);border-radius:10px;padding:10px 4px}
+.kpis b{display:block;font:600 20px/1.2 var(--mono)}
+h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue)}
+h3 a{text-decoration:none}
+.videos{margin:0;padding:0;list-style:none;counter-reset:v;display:flex;flex-direction:column;gap:2px}
+.videos li{counter-increment:v;display:grid;grid-template-columns:22px 1fr;column-gap:8px;padding:8px 0;border-bottom:1px solid var(--borde)}
+.videos li::before{content:counter(v);grid-row:span 2;font:600 12px/1.6 var(--mono);color:var(--acento)}
+.videos li:last-child{border:0}
+.videos a{text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.videos a:hover{color:var(--cian)}
+.videos span{color:var(--tenue);font-size:12px}
+.nota{color:var(--tenue);font-size:13px;margin:0}
+footer{margin-top:28px;color:var(--tenue);font-size:12px;text-align:center}
+/* editor */
+dialog{width:min(820px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:0;border:1px solid var(--borde);border-radius:16px;background:var(--panel);color:var(--texto)}
+dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
+.ed-cab{position:sticky;top:0;z-index:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--panel2);border-bottom:1px solid var(--borde)}
+.ed-cab h2{margin:0;font-size:18px}
+.ed-cab div{display:flex;flex-wrap:wrap;gap:8px}
+.ed-cuerpo{padding:16px;display:flex;flex-direction:column;gap:14px}
+fieldset{border:1px solid var(--borde);border-left:3px solid var(--acento);border-radius:12px;padding:14px;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px 14px}
+fieldset legend{font-weight:650;padding:0 6px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--tenue);text-transform:uppercase;letter-spacing:.05em}
+label.check{flex-direction:row;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:0;color:var(--texto)}
+input{font:15px/1.3 system-ui,sans-serif;color:var(--texto);background:#0a0d13;border:1px solid var(--borde);border-radius:8px;padding:9px 10px;width:100%;text-transform:none;letter-spacing:0}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--cian)}
+input[type=color]{padding:2px;height:38px}
+input:invalid{border-color:var(--rojo)}
+fieldset .fila{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#mensaje{margin:0;font-size:14px;color:var(--verde)}
+#mensaje:empty{display:none}
+textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto);background:#0a0d13;border:1px solid var(--borde);border-radius:8px;padding:10px}
+:focus-visible{outline:2px solid var(--cian);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.ambar .led{animation:none}}
+</style>
+</head>
+<body>
+<main class="envoltorio">
+  <div class="cabecera">
+    <div><h1>● Centro de control</h1><p>Canales automatizados</p></div>
+    <div class="acciones">
+      <button class="primario" id="abrir-editor" type="button">+ Añadir / Gestionar canales</button>
+      <small>Datos de <span id="generado"></span> · se regeneran cada 6 h</small>
+    </div>
+  </div>
+  <div class="aviso" id="aviso" hidden>
+    <span>Tienes cambios guardados solo en este navegador. Sincronízalos para que se publiquen y el robot del panel lea sus datos.</span>
+    <button type="button" class="primario" data-accion="sincronizar">Sincronizar con GitHub</button>
+    <button type="button" data-accion="descartar">Descartar</button>
+  </div>
+  <section class="resumen" id="resumen" aria-label="Resumen"></section>
+  <section class="rejilla" id="rejilla" aria-live="polite"></section>
+  <footer>Datos: GitHub Actions API · YouTube Data API v3 · los minutos cuentan para todos los repos privados de la cuenta</footer>
+</main>
+
+<dialog id="editor" aria-labelledby="titulo-editor">
+  <div class="ed-cab">
+    <h2 id="titulo-editor">Gestionar canales</h2>
+    <div>
+      <button type="button" data-accion="nuevo">+ Nuevo canal</button>
+      <button type="button" class="primario" data-accion="sincronizar">Sincronizar con GitHub</button>
+      <button type="button" data-accion="cerrar" aria-label="Cerrar">Cerrar ✕</button>
+    </div>
+  </div>
+  <div class="ed-cuerpo">
+    <p class="nota">Cada cambio se guarda al instante en este navegador y se ve en el panel. Para publicarlo y que el robot
+      lea sus datos, pulsa <b>Sincronizar con GitHub</b>: copia el config.json y abre su editor en GitHub, donde solo
+      tienes que pulsar <b>Ctrl+A</b>, <b>Ctrl+V</b> y <b>Commit changes</b>.</p>
+    <p id="mensaje" role="status"></p>
+    <div id="campos"></div>
+  </div>
+</dialog>
+
+<script type="application/json" id="config-json">__CONFIG__</script>
+<script type="application/json" id="datos-json">__DATOS__</script>
+<script>
+(function () {
+  "use strict";
+  var CLAVE = "panel-canales-config";
+  var BASE = JSON.parse(document.getElementById("config-json").textContent);
+  var DATOS = JSON.parse(document.getElementById("datos-json").textContent);
+  var GENERADO = "__GENERADO__";
+  var CAMPOS = [ // [clave, etiqueta, tipo, placeholder, patrón]
+    ["youtube", "@handle de YouTube", "text", "@MiCanal", "@[\\w.\\-]+|UC[\\w\\-]{22}"],
+    ["cuenta_google", "Cuenta (alias)", "text", "alias de la cuenta"],
+    ["proyecto_gcp", "Proyecto Google Cloud", "text", "mi-proyecto-123456"],
+    ["repo", "Repositorio GitHub", "text", "usuario/repo", "[\\w.\\-]+/[\\w.\\-]+"],
+    ["workflow", "Workflow del robot", "text", "diario.yml", "[\\w.\\-]+\\.ya?ml"],
+    ["horario", "Horario generación / estreno", "text", "Genera 14:00 · Estreno 18:00"],
+    ["minutos_estimados", "Minutos Actions / mes", "number", "0"],
+    ["color", "Color", "color"]
+  ];
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c];
+    });
+  };
+  var color = function (s) { return /^#[0-9a-f]{3,8}$/i.test(s || "") ? s : "#5b6675"; };
+  var igual = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
+  var copia = function (o) { return JSON.parse(JSON.stringify(o)); };
+
+  // localStorage puede no existir o lanzar (modo privado, archivo local): el panel funciona igual sin él
+  function leerLocal() { try { return JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { return null; } }
+  function guardar() {
+    try {
+      if (igual(cfg, BASE)) localStorage.removeItem(CLAVE); else localStorage.setItem(CLAVE, JSON.stringify(cfg));
+    } catch (e) { /* sin almacenamiento: los cambios duran hasta recargar */ }
+  }
+  var cfg = leerLocal();
+  if (!cfg || !Array.isArray(cfg.canales) || igual(cfg, BASE)) cfg = copia(BASE);  // ya sincronizado: manda GitHub
+  guardar();
+
+  function hora(iso) {
+    var d = new Date(iso);
+    var txt = isNaN(d) ? iso : d.toLocaleString(undefined, {day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"});
+    return '<time datetime="' + esc(iso) + '">' + esc(txt) + "</time>";
+  }
+  function num(n) {
+    if (n == null) return "oculto";
+    if (n >= 1e6) return +(n / 1e6).toFixed(1) + "M";
+    if (n >= 1e3) return +(n / 1e3).toFixed(1) + "K";
+    return String(n);
+  }
+  function barra(valor, limite, col) {
+    var pct = limite ? Math.min(100, valor / limite * 100) : 0;
+    return '<div class="barra' + (pct >= 80 ? " alerta" : "") + '" role="progressbar" aria-valuenow="' + valor +
+      '" aria-valuemin="0" aria-valuemax="' + limite + '"><span style="width:' + pct.toFixed(1) + "%;background:" + col + '"></span></div>';
+  }
+
+  function bloqueRobot(gh) {
+    var vacio = function (t) { return '<div class="robot gris"><span class="led"></span><div><b>Robot</b><small>' + esc(t) + "</small></div></div>"; };
+    if (gh.error) return vacio(gh.error);
+    var r = gh.ultima;
+    if (!r) return vacio("Sin ejecuciones todavía");
+    var e = r.status !== "completed" ? ["ambar", "En curso"] : r.conclusion === "success" ? ["verde", "Correcto"]
+      : (r.conclusion === "cancelled" || r.conclusion === "skipped") ? ["gris", "Cancelado"] : ["rojo", "Fallo"];
+    return '<a class="robot ' + e[0] + '" href="' + esc(r.html_url) + '" target="_blank" rel="noopener"><span class="led"></span><div><b>' +
+      e[1] + "</b><small>Última ejecución #" + esc(r.run_number) + " · " + hora(r.created_at) + " · " + gh.ejecuciones_mes +
+      " este mes, " + gh.fallos_mes + " fallos</small></div><i>Ver log ↗</i></a>";
+  }
+  function bloqueYoutube(yt) {
+    if (yt.error) return '<p class="nota">YouTube: ' + esc(yt.error) + "</p>";
+    var filas = yt.videos.map(function (v) {
+      return '<li><a href="https://youtu.be/' + esc(v.id) + '" target="_blank" rel="noopener">' + esc(v.titulo) + "</a><span>" +
+        num(v.vistas) + " vistas · " + hora(v.fecha) + "</span></li>";
+    }).join("") || '<li class="nota">Aún no hay videos públicos</li>';
+    return '<div class="kpis"><div><b>' + num(yt.suscriptores) + "</b><small>suscriptores</small></div><div><b>" + num(yt.vistas) +
+      "</b><small>vistas totales</small></div><div><b>" + num(yt.num_videos) + '</b><small>videos</small></div></div><h3><a href="' +
+      esc(yt.url) + '" target="_blank" rel="noopener">Últimos videos ↗</a></h3><ol class="videos">' + filas + "</ol>";
+  }
+  function tarjeta(c, limite) {
+    var acento = ' style="--acento:' + color(c.color) + '"';
+    if (c.proximamente) {
+      return '<article class="canal vacio"' + acento + "><header><h2>" + esc(c.nombre) + '</h2><span class="chip">' + esc(c.proximamente) +
+        '</span></header><p class="nota">Ranura reservada. Actívala desde «Gestionar canales».</p></article>';
+    }
+    var d = DATOS[c.nombre] || {gh: {error: "Sin datos aún: llegan en la próxima actualización tras sincronizar"}, yt: {error: "pendiente de sincronizar"}};
+    var est = Number(c.minutos_estimados) || 0;
+    var real = d.gh.error ? "" : " · real este mes " + d.gh.minutos_mes + " min → proyección " + d.gh.proyeccion + " min";
+    var fila = function (k, v) { return "<dt>" + k + "</dt><dd>" + v + "</dd>"; };
+    var repo = c.repo ? '<a href="https://github.com/' + esc(c.repo) + '" target="_blank" rel="noopener"><code>' + esc(c.repo) + "</code></a>" : "—";
+    return '<article class="canal"' + acento + "><header><h2>" + esc(c.nombre) + '</h2><span class="chip">' +
+      esc(c.youtube || "activo") + "</span></header>" + bloqueRobot(d.gh) + "<dl>" +
+      fila("Cuenta Google", esc(c.cuenta_google || "—")) + fila("Proyecto GCP", "<code>" + esc(c.proyecto_gcp || "—") + "</code>") +
+      fila("Repositorio", repo) + fila("Horario", esc(c.horario || "—")) + '</dl><div class="consumo"><small>Actions: ~' + est +
+      " min/mes estimados (" + Math.round(est / limite * 100) + "% de " + limite + ")" + real + "</small>" + barra(est, limite, color(c.color)) +
+      "</div>" + bloqueYoutube(d.yt) + "</article>";
+  }
+
+  function pintar() {
+    var limite = Number(cfg.limite_minutos) || 2000;
+    var activos = cfg.canales.filter(function (c) { return !c.proximamente; });
+    var gh = activos.map(function (c) { return (DATOS[c.nombre] || {gh: {error: 1}}).gh; });
+    var reales = gh.filter(function (g) { return !g.error; });
+    var suma = function (lista, f) { return lista.reduce(function (s, x) { return s + (Number(f(x)) || 0); }, 0); };
+    var est = suma(activos, function (c) { return c.minutos_estimados; });
+    var real = suma(reales, function (g) { return g.minutos_mes; });
+    var proy = suma(reales, function (g) { return g.proyeccion; });
+    var ok = gh.filter(function (g) { return g.ultima && g.ultima.conclusion === "success"; }).length;
+    var kpi = function (t, v) { return "<div><small>" + t + "</small><b>" + v + "</b></div>"; };
+    $("resumen").innerHTML = kpi("Robots en verde", ok + "/" + activos.length) + kpi("Minutos estimados / mes", est) +
+      kpi("Minutos reales este mes", reales.length ? real : "—") + kpi("Proyección fin de mes", reales.length ? proy : "—") +
+      '<div class="ancho"><small>Consumo GitHub Actions sobre ' + limite + " min gratuitos (el mayor entre estimado y proyección)</small>" +
+      barra(Math.max(est, proy), limite, "var(--cian)") + "</div>";
+    $("rejilla").innerHTML = cfg.canales.map(function (c) { return tarjeta(c, limite); }).join("");
+    $("aviso").hidden = igual(cfg, BASE);
+  }
+
+  function pintarEditor() {
+    $("campos").innerHTML = cfg.canales.map(function (c, i) {
+      var activo = !c.proximamente;
+      var html = '<fieldset data-i="' + i + '" style="--acento:' + color(c.color) + '"><legend>' + esc(c.nombre || "Sin nombre") + "</legend>" +
+        '<label>Nombre del canal<input data-k="nombre" required value="' + esc(c.nombre) + '"></label>' +
+        '<label class="check"><input type="checkbox" data-k="activo"' + (activo ? " checked" : "") + "> Canal activo</label>";
+      if (!activo) {
+        html += '<label>Fecha prevista<input data-k="proximamente" value="' + esc(c.proximamente) + '" placeholder="Enero 2027"></label>';
+      }
+      CAMPOS.forEach(function (f) {
+        html += "<label>" + f[1] + '<input data-k="' + f[0] + '" type="' + f[2] + '" value="' + esc(f[2] === "color" ? color(c[f[0]]) : c[f[0]]) + '"' +
+          (f[3] ? ' placeholder="' + esc(f[3]) + '"' : "") + (f[4] ? ' pattern="' + esc(f[4]) + '"' : "") + (f[2] === "number" ? ' min="0"' : "") + "></label>";
+      });
+      return html + '<div class="fila"><span class="nota">' + (activo ? "Activo" : "Ranura reservada") +
+        '</span><button type="button" class="peligro" data-accion="eliminar">Eliminar canal</button></div></fieldset>';
+    }).join("") || '<p class="nota">No hay canales. Pulsa «+ Nuevo canal».</p>';
+  }
+
+  function aviso(texto, html) { $("mensaje").innerHTML = html || esc(texto); }
+
+  $("campos").addEventListener("input", function (ev) {
+    var el = ev.target, k = el.dataset.k, fs = el.closest("fieldset");
+    if (!k || !fs) return;
+    var c = cfg.canales[+fs.dataset.i];
+    if (k === "activo") {
+      if (el.checked) delete c.proximamente; else c.proximamente = "Próximamente";
+      pintarEditor();
+    } else if (k === "proximamente") {
+      c.proximamente = el.value.trim() || "Próximamente";  // vacío significaría «activo»
+    } else {
+      c[k] = el.type === "number" ? Math.max(0, Number(el.value) || 0) : el.value.trim();
+      if (k === "nombre") fs.querySelector("legend").textContent = c.nombre || "Sin nombre";
+      if (k === "color") fs.style.setProperty("--acento", color(c.color));
+    }
+    guardar(); pintar();
+  });
+
+  function sincronizar() {
+    var texto = JSON.stringify(cfg, null, 2) + "\n";
+    var repo = /^[\w.\-]+\/[\w.\-]+$/.test(cfg.repo_panel || "") ? cfg.repo_panel : BASE.repo_panel;
+    var url = "https://github.com/" + repo + "/edit/main/config.json";
+    if (!$("editor").open) $("editor").showModal();
+    var abrir = function (copiado) {
+      var w = window.open(url, "_blank");
+      if (w) w.opener = null;
+      var enlace = '<a href="' + esc(url) + '" target="_blank" rel="noopener">abrir config.json en GitHub ↗</a>';
+      if (copiado) {
+        aviso("", "✔ config.json copiado. En GitHub pulsa <b>Ctrl+A</b>, <b>Ctrl+V</b> y <b>Commit changes</b>; el panel se republica solo en ~1 min." +
+          (w ? "" : " La pestaña no se abrió: " + enlace));
+      } else {  // portapapeles bloqueado: se muestra el texto ya seleccionado para copiarlo a mano
+        aviso("", "No se pudo copiar automáticamente: copia este texto (Ctrl+C) y pégalo en " + enlace + '.<textarea id="texto-config" readonly></textarea>');
+        $("texto-config").value = texto; $("texto-config").select();
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(function () { abrir(true); }, function () { abrir(false); });
+    } else abrir(false);
+  }
+
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-accion]");
+    if (!b) return;
+    var accion = b.dataset.accion;
+    if (accion === "sincronizar") return sincronizar();
+    if (accion === "cerrar") return $("editor").close();
+    if (accion === "descartar") { cfg = copia(BASE); aviso(""); }
+    if (accion === "nuevo") {
+      cfg.canales.push({nombre: "Canal " + (cfg.canales.length + 1), color: "#38d3f5", cuenta_google: "", proyecto_gcp: "", repo: "",
+        workflow: "", youtube: "", horario: "", minutos_estimados: 0});
+    }
+    if (accion === "eliminar") {
+      var i = +b.closest("fieldset").dataset.i;
+      if (!confirm("¿Eliminar «" + cfg.canales[i].nombre + "» del panel?")) return;
+      cfg.canales.splice(i, 1);
+    }
+    guardar(); pintar(); pintarEditor();
+    if (accion === "nuevo") $("campos").lastElementChild.scrollIntoView({behavior: "smooth", block: "start"});
+  });
+  $("abrir-editor").addEventListener("click", function () { aviso(""); pintarEditor(); $("editor").showModal(); });
+
+  $("generado").innerHTML = hora(GENERADO);
+  pintar();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+name: Panel de canales · actualizar
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"  # cada 6 h (minuto 17 para evitar la congestión de la hora en punto)
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Comprobaciones
+        run: python test_dashboard.py
+
+      - name: Generar index.html
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+        run: mkdir -p sitio && python actualizar_dashboard.py sitio/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: sitio
+
+      - id: despliegue
+        uses: actions/deploy-pages@v4
