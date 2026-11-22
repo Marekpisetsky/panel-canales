@@ -2,8 +2,10 @@
 
 Lee config.json y consulta:
 - GitHub Actions (GH_PAT): si la última ejecución de cada robot salió bien (punto verde/rojo).
-- YouTube Data API v3 (YT_API_KEY, solo clave pública): suscriptores y vistas de cada canal.
-Guarda en historico.json los suscriptores y vistas de cada canal por día (la última lectura del día manda);
+- YouTube Data API v3 (YT_API_KEY, solo clave pública): suscriptores, vistas y últimos 5 videos de cada canal.
+- YouTube Analytics API (YT_ANALYTICS_TOKENS_JSON, OAuth yt-analytics.readonly): retención de los últimos 28 días.
+  Formato: {"Nombre del canal": {"client_id", "client_secret", "refresh_token"}}; un canal sin token sale con "—".
+Guarda en historico.json los suscriptores, vistas y retención de cada canal por día (la última lectura del día manda);
 el workflow lo sube al repo para que las curvas sean reales.
 Python solo reúne datos y los incrusta en plantilla.html; el navegador dibuja KPIs y gráficos, así el editor de
 canales de la propia página (localStorage) se ve reflejado al instante.
@@ -26,8 +28,9 @@ RAIZ = Path(__file__).parent
 HISTORICO = RAIZ / "historico.json"
 
 
-def pedir_json(url, cabeceras=None):
-    req = urllib.request.Request(url, headers={"User-Agent": "panel-canales", **(cabeceras or {})})
+def pedir_json(url, cabeceras=None, formulario=None):
+    datos = urllib.parse.urlencode(formulario).encode() if formulario else None  # con formulario es un POST
+    req = urllib.request.Request(url, data=datos, headers={"User-Agent": "panel-canales", **(cabeceras or {})})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return json.load(r)
@@ -84,7 +87,7 @@ def datos_youtube(canal):
         return {"error": "Falta el @handle del canal"}
     # ID de canal (UC + 22 caracteres) → id; cualquier otra cosa es un handle, que se envía sin la @
     filtro = {"id": ident} if re.fullmatch(r"UC[\w-]{22}", ident) else {"forHandle": ident.lstrip("@")}
-    items = youtube("channels", part="statistics", **filtro).get("items", [])
+    items = youtube("channels", part="statistics,contentDetails", **filtro).get("items", [])
     if not items:
         return {"error": f"Canal no encontrado: {ident}"}
     s = items[0]["statistics"]
@@ -92,6 +95,51 @@ def datos_youtube(canal):
         "url": f"https://www.youtube.com/channel/{items[0]['id']}",
         "suscriptores": None if s.get("hiddenSubscriberCount") else int(s.get("subscriberCount", 0)),
         "vistas": int(s.get("viewCount", 0)),
+        "id": items[0]["id"],
+        "videos": ultimos_videos(items[0]["contentDetails"]["relatedPlaylists"]["uploads"]),
+    }
+
+
+def ultimos_videos(lista_subidas, n=5):
+    ids = [i["contentDetails"]["videoId"]
+           for i in youtube("playlistItems", part="contentDetails", playlistId=lista_subidas, maxResults=n).get("items", [])]
+    if not ids:
+        return []
+    vids = youtube("videos", part="snippet,statistics", id=",".join(ids)).get("items", [])
+    return sorted(({"id": v["id"], "titulo": v["snippet"]["title"], "fecha": v["snippet"]["publishedAt"],
+                    "vistas": int(v["statistics"].get("viewCount", 0)),
+                    "likes": int(v["statistics"]["likeCount"]) if "likeCount" in v["statistics"] else None}
+                   for v in vids), key=lambda v: v["fecha"], reverse=True)
+
+
+def datos_analytics(canal, yt, ahora):
+    """Retención media del canal y de cada video en los últimos 28 días (Analytics va con ~2 días de retraso)."""
+    if "error" in yt:
+        return {"error": "Sin canal de YouTube"}
+    try:
+        cred = json.loads(secreto("YT_ANALYTICS_TOKENS_JSON") or "{}").get(canal["nombre"])
+    except ValueError:
+        return {"error": "YT_ANALYTICS_TOKENS_JSON no es JSON válido"}
+    if not cred:
+        return {"error": "Analytics sin configurar"}
+    token = pedir_json("https://oauth2.googleapis.com/token", formulario={
+        "grant_type": "refresh_token", **{k: cred[k] for k in ("client_id", "client_secret", "refresh_token")}})["access_token"]
+
+    def informe(**params):
+        params.update(ids=f"channel=={yt['id']}", startDate=f"{ahora - dt.timedelta(days=28):%Y-%m-%d}", endDate=f"{ahora:%Y-%m-%d}")
+        r = pedir_json(f"https://youtubeanalytics.googleapis.com/v2/reports?{urllib.parse.urlencode(params)}",
+                       {"Authorization": f"Bearer {token}"})
+        cols = [c["name"] for c in r["columnHeaders"]]
+        return [dict(zip(cols, fila)) for fila in r.get("rows") or []]
+
+    total = (informe(metrics="averageViewPercentage,averageViewDuration") or [{}])[0]
+    # un video sin vistas en los 28 días no aparece y queda sin retención
+    por_video = {f["video"]: round(f["averageViewPercentage"], 1)
+                 for f in informe(dimensions="video", metrics="views,averageViewPercentage", sort="-views", maxResults=200)}
+    return {
+        "retencion": None if total.get("averageViewPercentage") is None else round(total["averageViewPercentage"], 1),
+        "duracion": total.get("averageViewDuration"),
+        "por_video": {v["id"]: por_video[v["id"]] for v in yt["videos"] if v["id"] in por_video},
     }
 
 
@@ -104,11 +152,14 @@ def recoger(fuente, *args):
 
 
 def anotar_historico(historico, datos, dia):
-    """{fecha: {canal: {suscriptores, vistas}}}; solo canales con lectura válida, sin borrar lo ya guardado del día."""
+    """{fecha: {canal: {suscriptores, vistas, retencion}}}; solo lecturas válidas, sin borrar lo ya guardado del día."""
     hoy = historico.setdefault(dia, {})
     for nombre, d in datos.items():
-        if "error" not in d["yt"]:
-            hoy[nombre] = {"suscriptores": d["yt"]["suscriptores"], "vistas": d["yt"]["vistas"]}
+        fila = {} if "error" in d["yt"] else {"suscriptores": d["yt"]["suscriptores"], "vistas": d["yt"]["vistas"]}
+        if d.get("an", {}).get("retencion") is not None:
+            fila["retencion"] = d["an"]["retencion"]
+        if fila:
+            hoy[nombre] = {**hoy.get(nombre, {}), **fila}
     if not hoy:
         del historico[dia]
     return dict(sorted(historico.items()))
@@ -130,10 +181,14 @@ def generar_html(config, datos, historico, ahora):
 def main():
     config = json.loads((RAIZ / "config.json").read_text(encoding="utf-8"))
     ahora = dt.datetime.now(dt.timezone.utc)
-    datos = {c["nombre"]: {"gh": recoger(datos_github, c), "yt": recoger(datos_youtube, c)}
-             for c in config["canales"] if not c.get("proximamente")}
+    datos = {}
+    for c in config["canales"]:
+        if not c.get("proximamente"):
+            yt = recoger(datos_youtube, c)
+            datos[c["nombre"]] = {"gh": recoger(datos_github, c), "yt": yt, "an": recoger(datos_analytics, c, yt, ahora)}
     for nombre, d in datos.items():
-        print(f"{nombre}: GitHub {d['gh'].get('error', 'ok')} | YouTube {d['yt'].get('error', 'ok')}")
+        print(f"{nombre}: GitHub {d['gh'].get('error', 'ok')} | YouTube {d['yt'].get('error', 'ok')} | "
+              f"Analytics {d['an'].get('error', 'ok')}")
     historico = json.loads(HISTORICO.read_text(encoding="utf-8")) if HISTORICO.exists() else {}
     historico = anotar_historico(historico, datos, f"{ahora:%Y-%m-%d}")
     HISTORICO.write_text(json.dumps(historico, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

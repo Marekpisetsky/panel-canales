@@ -37,6 +37,7 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          YT_ANALYTICS_TOKENS_JSON: ${{ secrets.YT_ANALYTICS_TOKENS_JSON }}
         run: mkdir -p sitio && python actualizar_dashboard.py sitio/index.html
 
       - uses: actions/upload-pages-artifact@v3

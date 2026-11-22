@@ -34,19 +34,31 @@ button.peligro{color:var(--rojo);border-color:#ff5d5d55}
 .kpi h2{margin:0;font-size:15px;font-weight:600;overflow-wrap:anywhere}
 .kpi h2 a{text-decoration:none}
 .kpi h2 a:hover{color:var(--cian)}
-.cifras{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.cifras b{display:block;font:650 30px/1.1 var(--mono);letter-spacing:-.02em}
+.cifras{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cifras b{display:block;font:650 24px/1.1 var(--mono);letter-spacing:-.02em;overflow-wrap:anywhere}
 .cifras small{color:var(--tenue);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
 .kpi .nota{margin-top:8px}
 .led{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none;background:var(--c);box-shadow:0 0 10px var(--c)}
 a.led:hover{outline:2px solid var(--c);outline-offset:2px}
 .verde{--c:var(--verde)}.rojo{--c:var(--rojo)}.ambar{--c:var(--ambar)}.gris{--c:var(--gris)}
 /* gráficos */
-.graficos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:12px}
+.graficos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}
 .graficos .caja{padding:16px 16px 10px}
-.graficos h2{margin:0 0 10px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue)}
+.graficos h2,.videos h2{margin:0 0 10px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue)}
 .lienzo{position:relative;height:260px}
 .nota{color:var(--tenue);font-size:13px;margin:0}
+/* últimos videos */
+.videos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:12px}
+.videos .caja{padding:14px 16px;border-top:3px solid var(--acento);overflow-x:auto}
+.videos h2 a{text-decoration:none}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:right;font-weight:500;color:var(--tenue);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:0 0 6px 10px}
+td{text-align:right;padding:6px 0 6px 10px;border-top:1px solid var(--borde);font-family:var(--mono);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0;font-family:inherit;white-space:normal}
+td:first-child a{text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+td:first-child a:hover{color:var(--cian)}
+td small{display:block;color:var(--tenue);font:11px var(--mono)}
+tr.mejor td.ret{color:var(--acento);font-weight:700}
 footer{color:var(--tenue);font-size:12px;text-align:center}
 /* editor */
 dialog{width:min(820px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:0;border:1px solid var(--borde);border-radius:16px;background:var(--panel);color:var(--texto)}
@@ -85,8 +97,10 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
   <section class="graficos">
     <div class="caja"><h2>Vistas acumuladas</h2><div class="lienzo"><canvas id="g-vistas" role="img" aria-label="Evolución diaria de vistas por canal"></canvas></div></div>
     <div class="caja"><h2>Suscriptores</h2><div class="lienzo"><canvas id="g-suscriptores" role="img" aria-label="Evolución diaria de suscriptores por canal"></canvas></div></div>
+    <div class="caja"><h2>Retención media (28 días)</h2><div class="lienzo"><canvas id="g-retencion" role="img" aria-label="Evolución diaria de la retención media por canal"></canvas></div></div>
   </section>
-  <footer>Un punto por día desde que se guarda el histórico · punto junto al nombre: verde = la última ejecución del robot salió bien</footer>
+  <section class="videos" id="videos" aria-label="Últimos 5 videos de cada canal, de mayor a menor retención"></section>
+  <footer>Un punto por día desde que se guarda el histórico · retención = % medio de cada video que se ve (últimos 28 días, YouTube Analytics) · punto junto al nombre: verde = la última ejecución del robot salió bien</footer>
 </main>
 
 <dialog id="editor" aria-labelledby="titulo-editor">
@@ -134,6 +148,8 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
   var igual = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
   var copia = function (o) { return JSON.parse(JSON.stringify(o)); };
   var cifra = function (n) { return n == null ? "—" : Number(n).toLocaleString("es"); };
+  var pct = function (n) { return n == null ? "—" : cifra(n) + " %"; };
+  var minutos = function (s) { return Math.floor(s / 60) + ":" + ("0" + Math.round(s % 60)).slice(-2); };
   var fecha = function (iso, opciones) {
     var d = new Date(iso);
     return isNaN(d) ? iso : d.toLocaleString(undefined, opciones || {day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"});
@@ -163,11 +179,13 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
   function pintarKpis() {
     $("kpis").innerHTML = activos().map(function (c) {
       var d = DATOS[c.nombre] || {gh: null, yt: {error: "Sin datos aún: llegan tras sincronizar"}};
-      var yt = d.yt.error ? {} : d.yt;
+      var yt = d.yt.error ? {} : d.yt, an = d.an || {error: "Sin datos de Analytics aún"};
       var nombre = yt.url ? '<a href="' + esc(yt.url) + '" target="_blank" rel="noopener">' + esc(c.nombre) + "</a>" : esc(c.nombre);
       return '<article class="caja kpi" style="--acento:' + color(c.color) + '"><header><h2>' + nombre + "</h2>" + led(d.gh) + "</header>" +
         '<div class="cifras"><div><b>' + (yt.suscriptores === null ? "oculto" : cifra(yt.suscriptores)) + "</b><small>Suscriptores</small></div>" +
-        "<div><b>" + cifra(yt.vistas) + "</b><small>Vistas</small></div></div>" +
+        "<div><b>" + cifra(yt.vistas) + "</b><small>Vistas</small></div>" +
+        '<div title="' + esc(an.error || "Duración media vista: " + (an.duracion == null ? "—" : minutos(an.duracion)) + " · últimos 28 días") + '"><b>' +
+        pct(an.retencion) + "</b><small>Retención" + (an.duracion == null ? "" : " · " + minutos(an.duracion)) + "</small></div></div>" +
         (d.yt.error ? '<p class="nota">' + esc(d.yt.error) + "</p>" : "") + "</article>";
     }).join("") || '<p class="nota">No hay canales activos. Pulsa «+ Añadir / Gestionar canales».</p>';
   }
@@ -180,7 +198,8 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
     }
     var dias = Object.keys(HISTORICO).sort();
     var compacto = new Intl.NumberFormat("es", {notation: "compact"});
-    [["vistas", "g-vistas"], ["suscriptores", "g-suscriptores"]].forEach(function (g) {
+    [["vistas", "g-vistas"], ["suscriptores", "g-suscriptores"], ["retencion", "g-retencion", " %"]].forEach(function (g) {
+      var sufijo = g[2] || "";
       var series = activos().map(function (c) {
         var col = color(c.color);
         return {
@@ -198,20 +217,39 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
           interaction: {mode: "index", intersect: false},
           plugins: {
             legend: {position: "bottom", labels: {color: "#8b98a9", boxWidth: 10, boxHeight: 10, usePointStyle: true}},
-            tooltip: {callbacks: {label: function (x) { return " " + x.dataset.label + ": " + cifra(x.parsed.y); }}}
+            tooltip: {callbacks: {label: function (x) { return " " + x.dataset.label + ": " + cifra(x.parsed.y) + sufijo; }}}
           },
           scales: {
             x: {ticks: {color: "#8b98a9", maxRotation: 0, autoSkip: true}, grid: {display: false}},
-            y: {beginAtZero: true, ticks: {color: "#8b98a9", callback: function (v) { return compacto.format(v); }}, grid: {color: "#1e2633"}}
+            y: {beginAtZero: true, suggestedMax: sufijo ? 100 : undefined, grid: {color: "#1e2633"},
+                ticks: {color: "#8b98a9", callback: function (v) { return compacto.format(v) + sufijo; }}}
           }
         }
       });
     });
   }
 
+  // últimos 5 videos de cada canal, el de mayor retención arriba (los que aún no tienen dato, al final y por fecha)
+  function pintarVideos() {
+    $("videos").innerHTML = activos().map(function (c) {
+      var d = DATOS[c.nombre] || {yt: {}}, vids = (d.yt && d.yt.videos) || [], ret = (d.an && d.an.por_video) || {};
+      if (!vids.length) return "";
+      vids = vids.slice().sort(function (a, b) { return (ret[b.id] == null ? -1 : ret[b.id]) - (ret[a.id] == null ? -1 : ret[a.id]); });
+      var mejor = ret[vids[0].id] != null ? vids[0].id : null;
+      return '<div class="caja" style="--acento:' + color(c.color) + '"><h2>' + esc(c.nombre) + " · últimos videos</h2><table>" +
+        "<thead><tr><th scope=\"col\">Video</th><th scope=\"col\">Vistas</th><th scope=\"col\">Likes</th><th scope=\"col\">Retención</th></tr></thead><tbody>" +
+        vids.map(function (v) {
+          return "<tr" + (v.id === mejor ? ' class="mejor"' : "") + '><td><a href="https://www.youtube.com/watch?v=' + encodeURIComponent(v.id) +
+            '" target="_blank" rel="noopener">' + esc(v.titulo) + "</a><small>" + esc(fecha(v.fecha, {day: "2-digit", month: "short"})) + "</small></td>" +
+            "<td>" + cifra(v.vistas) + "</td><td>" + cifra(v.likes) + '</td><td class="ret">' + pct(ret[v.id]) + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+    }).join("");
+  }
+
   function pintar() {
     pintarKpis();
     pintarGraficos();
+    pintarVideos();
     $("aviso").hidden = igual(cfg, BASE);
   }
 

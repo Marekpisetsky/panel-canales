@@ -24,6 +24,20 @@ assert "2026-11-23" not in p.anotar_historico(h, {"A": mal}, "2026-11-23")
 assert list(p.anotar_historico({"2026-11-23": {}, "2026-11-01": {"A": {}}}, {"A": ok(1, 1)}, "2026-11-15")) == \
     ["2026-11-01", "2026-11-15", "2026-11-23"]
 
+# Retención: se suma al dato del día sin pisar suscriptores/vistas, y sin Analytics no se anota nada nuevo.
+r = p.anotar_historico({}, {"A": ok(1, 1)}, "d")
+r = p.anotar_historico(r, {"A": {"yt": {"error": "x"}, "an": {"retencion": 41.5}}}, "d")
+assert r == {"d": {"A": {"suscriptores": 1, "vistas": 1, "retencion": 41.5}}}, r
+assert p.anotar_historico({}, {"A": {"yt": {"error": "x"}, "an": {"retencion": None}}}, "d") == {}
+
+# Analytics sin secreto o sin token para ese canal: respaldo limpio, sin tocar la red.
+os.environ.pop("YT_ANALYTICS_TOKENS_JSON", None)
+assert p.datos_analytics({"nombre": "A"}, {"id": "UC"}, None) == {"error": "Analytics sin configurar"}
+os.environ["YT_ANALYTICS_TOKENS_JSON"] = '{"B": {}}'
+assert p.datos_analytics({"nombre": "A"}, {"id": "UC"}, None) == {"error": "Analytics sin configurar"}
+os.environ["YT_ANALYTICS_TOKENS_JSON"] = "{roto"
+assert "no es JSON" in p.datos_analytics({"nombre": "A"}, {"id": "UC"}, None)["error"]
+
 # Render: un texto con </script> no puede cerrar los bloques de datos; config, datos e histórico vuelven intactos.
 config = json.loads((Path(__file__).parent / "config.json").read_text(encoding="utf-8"))
 malo = "</script><script>alert(1)</script>"
