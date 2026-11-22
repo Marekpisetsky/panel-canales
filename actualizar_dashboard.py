@@ -18,6 +18,7 @@ import math
 import os
 import re
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -27,19 +28,35 @@ RAIZ = Path(__file__).parent
 
 def pedir_json(url, cabeceras=None):
     req = urllib.request.Request(url, headers={"User-Agent": "panel-canales", **(cabeceras or {})})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        # el motivo real (clave inválida, API no activada, token caducado...) viene en el cuerpo, no en el código HTTP;
+        # no se incluye la URL porque lleva la API key
+        try:
+            cuerpo = json.load(e)
+        except ValueError:
+            cuerpo = {}
+        err = cuerpo.get("error")
+        motivo = err.get("message") if isinstance(err, dict) else cuerpo.get("message")
+        raise RuntimeError(f"HTTP {e.code}: {motivo or e.reason}") from None
+
+
+def secreto(nombre):
+    """Los secrets pegados a mano suelen traer un salto de línea o espacios al final."""
+    return os.getenv(nombre, "").strip()
 
 
 def github(ruta):
     cab = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
-    if os.getenv("GH_PAT"):
-        cab["Authorization"] = f"Bearer {os.environ['GH_PAT']}"
+    if secreto("GH_PAT"):
+        cab["Authorization"] = f"Bearer {secreto('GH_PAT')}"
     return pedir_json(f"https://api.github.com{ruta}", cab)
 
 
 def youtube(recurso, **params):
-    params["key"] = os.environ["YT_API_KEY"]
+    params["key"] = secreto("YT_API_KEY")
     return pedir_json(f"https://www.googleapis.com/youtube/v3/{recurso}?{urllib.parse.urlencode(params)}")
 
 
@@ -55,7 +72,7 @@ def minutos_facturables(runs):
 
 
 def datos_github(canal, ahora):
-    if not os.getenv("GH_PAT"):
+    if not secreto("GH_PAT"):
         return {"error": "Falta GH_PAT"}
     # config.json se edita a mano desde el navegador: estos valores acaban dentro de la URL de la API
     if not re.fullmatch(r"[\w.-]+/[\w.-]+", canal.get("repo", "")):
@@ -85,12 +102,13 @@ def datos_github(canal, ahora):
 
 
 def datos_youtube(canal):
-    if not os.getenv("YT_API_KEY"):
+    if not secreto("YT_API_KEY"):
         return {"error": "Falta YT_API_KEY"}
     ident = canal.get("youtube", "").strip()
     if not ident:
         return {"error": "Falta el @handle del canal"}
-    filtro = {"forHandle": ident} if ident.startswith("@") else {"id": ident}
+    # ID de canal (UC + 22 caracteres) → id; cualquier otra cosa es un handle, que se envía sin la @
+    filtro = {"id": ident} if re.fullmatch(r"UC[\w-]{22}", ident) else {"forHandle": ident.lstrip("@")}
     items = youtube("channels", part="snippet,statistics,contentDetails", **filtro).get("items", [])
     if not items:
         return {"error": f"Canal no encontrado: {ident}"}
