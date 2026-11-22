@@ -40,7 +40,9 @@ def pedir_json(url, cabeceras=None):
             cuerpo = {}
         err = cuerpo.get("error")
         motivo = err.get("message") if isinstance(err, dict) else cuerpo.get("message")
-        raise RuntimeError(f"HTTP {e.code}: {motivo or e.reason}") from None
+        # Google pone la causa concreta (SERVICE_DISABLED, API_KEY_SERVICE_BLOCKED...) en details[].reason
+        razones = {d.get("reason") for d in (err.get("details") or []) + (err.get("errors") or [])} - {None} if isinstance(err, dict) else set()
+        raise RuntimeError(f"HTTP {e.code}: {motivo or e.reason}" + (f" [{', '.join(sorted(razones))}]" if razones else "")) from None
 
 
 def secreto(nombre):
