@@ -22,9 +22,11 @@
       "horario": "Short diario: genera 14:00, estreno 18:00 · Largo mar/vie: genera 15:00, estreno 19:00 — hora de Nueva York"
     },
     {
-      "nombre": "Canal 3",
+      "nombre": "Vector Cero",
       "color": "#7aa2ff",
-      "proximamente": "Enero 2027"
+      "youtube": "@VectorCeroES",
+      "workflow": "vector_cero.yml",
+      "repo": "vectorcero/vector-cero"
     },
     {
       "nombre": "Canal 4",
