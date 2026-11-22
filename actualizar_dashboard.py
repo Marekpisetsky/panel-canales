@@ -140,7 +140,9 @@ def datos_analytics(canal, yt, ahora):
         cols = [c["name"] for c in r["columnHeaders"]]
         return [dict(zip(cols, fila)) for fila in r.get("rows") or []]
 
-    total = (informe(metrics="averageViewPercentage,averageViewDuration") or [{}])[0]
+    total = (informe(metrics="views,averageViewPercentage,averageViewDuration") or [{}])[0]
+    if not total.get("views"):  # sin vistas Google da 0 %, que parecería una retención real
+        total = {}
     # un video sin vistas en los 28 días no aparece y queda sin retención
     por_video = {f["video"]: round(f["averageViewPercentage"], 1)
                  for f in informe(dimensions="video", metrics="views,averageViewPercentage", sort="-views", maxResults=200)}
