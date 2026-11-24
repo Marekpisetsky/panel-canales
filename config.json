@@ -3,7 +3,7 @@
   "canales": [
     {
       "nombre": "Archivo Cero",
-      "color": "#ff5d5d",
+      "color": "#3B82F6",
       "cuenta_google": "codevamp001 (Principal)",
       "proyecto_gcp": "robotshorts-515415",
       "repo": "Marekpisetsky/archivo-cero",
@@ -13,7 +13,7 @@
     },
     {
       "nombre": "Clear Ledger",
-      "color": "#3ddc97",
+      "color": "#10B981",
       "cuenta_google": "marekpisetskt@gmail.com",
       "proyecto_gcp": "clearledger-515513",
       "repo": "Marekpisetsky/clear-ledger",
