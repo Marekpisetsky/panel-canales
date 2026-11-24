@@ -16,7 +16,10 @@
 [hidden]{display:none!important}
 body{margin:0;background:var(--fondo);color:var(--texto);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:inherit}
-.envoltorio{max-width:1240px;margin:0 auto;padding:24px 16px 40px;display:flex;flex-direction:column;gap:16px}
+.envoltorio{max-width:1240px;margin:0 auto;padding:24px 16px 40px;display:flex;flex-direction:column;gap:40px}
+.seccion{display:flex;flex-direction:column;gap:16px}
+.titulo-seccion{display:flex;align-items:center;gap:14px;margin:0;font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.14em;color:var(--tenue)}
+.titulo-seccion::after{content:"";flex:1;height:1px;background:var(--borde)}
 .cabecera{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
 .cabecera h1{margin:0;font-size:22px;font-weight:650;letter-spacing:-.01em}
 .cabecera small{display:block;color:var(--tenue);font:12px var(--mono);margin-top:2px}
@@ -28,8 +31,12 @@ button.peligro{color:var(--rojo);border-color:#ff5d5d55}
 .aviso span{flex:1;min-width:200px}
 .caja{background:var(--panel);border:1px solid var(--borde);border-radius:14px}
 /* KPIs */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
-.kpi{padding:16px 18px;border-top:3px solid var(--acento)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:24px}
+.kpi{padding:16px 18px;border-top:3px solid var(--acento);border-left:3px solid var(--acento);cursor:pointer;display:flex;flex-direction:column;transition:box-shadow .15s,background .15s}
+.kpi:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--acento) 45%,transparent)}
+.kpi.activo{background:color-mix(in srgb,var(--acento) 10%,var(--panel));box-shadow:0 0 0 1px var(--acento),0 0 28px -6px var(--acento)}
+.kpi .ver{margin-top:14px;align-self:flex-start;font-size:13px;padding:8px 12px;color:var(--acento);border-color:color-mix(in srgb,var(--acento) 40%,transparent)}
+.kpi .ver:hover,.kpi .ver[aria-pressed=true]{background:var(--acento);color:#04121a;border-color:var(--acento)}
 .kpi header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .kpi h2{margin:0;font-size:15px;font-weight:600;overflow-wrap:anywhere}
 .kpi h2 a{text-decoration:none}
@@ -42,15 +49,24 @@ button.peligro{color:var(--rojo);border-color:#ff5d5d55}
 a.led:hover{outline:2px solid var(--c);outline-offset:2px}
 .verde{--c:var(--verde)}.rojo{--c:var(--rojo)}.ambar{--c:var(--ambar)}.gris{--c:var(--gris)}
 /* gráficos */
-.graficos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}
-.graficos .caja{padding:16px 16px 10px}
-.graficos h2,.videos h2{margin:0 0 10px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue)}
-.lienzo{position:relative;height:260px}
+/* 2 columnas a propósito: así no parecen «una gráfica por tarjeta» de arriba */
+.graficos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.graficos .caja{padding:18px 18px 12px;display:flex;flex-direction:column}
+.graficos .principal{grid-row:span 2}
+.graficos .principal .lienzo{flex:1;min-height:320px;contain:size}  /* contain: el canvas no agranda la fila */
+.graficos h2,.detalle h3{margin:0 0 10px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue)}
+.lienzo{position:relative;height:220px}
 .nota{color:var(--tenue);font-size:13px;margin:0}
-/* últimos videos */
-.videos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:12px}
-.videos .caja{padding:14px 16px;border-top:3px solid var(--acento);overflow-x:auto}
-.videos h2 a{text-decoration:none}
+@media (max-width:760px){.graficos{grid-template-columns:minmax(0,1fr)}.graficos .principal{grid-row:auto}}
+/* inspector del canal seleccionado */
+.pestanas{display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--borde)}
+.pestana{border:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;background:none;color:var(--tenue);padding:10px 16px;margin-bottom:-1px}
+.pestana:hover{color:var(--texto);background:var(--panel)}
+.pestana[aria-pressed=true]{color:var(--texto);border-bottom-color:var(--acento);background:color-mix(in srgb,var(--acento) 12%,var(--panel))}
+.detalle{padding:18px;border-top:3px solid var(--acento);display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px}
+.detalle .tabla{overflow-x:auto}
+.vacio{padding:20px;border:1px dashed var(--borde);border-radius:10px;text-align:center}
+@media (max-width:860px){.detalle{grid-template-columns:minmax(0,1fr)}}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:right;font-weight:500;color:var(--tenue);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:0 0 6px 10px}
 td{text-align:right;padding:6px 0 6px 10px;border-top:1px solid var(--borde);font-family:var(--mono);white-space:nowrap}
@@ -61,10 +77,9 @@ td small{display:block;color:var(--tenue);font:11px var(--mono)}
 tr.mejor td.ret{color:var(--acento);font-weight:700}
 td.ret button{font:inherit;color:inherit;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px;margin:-3px -7px -3px 0;text-decoration:underline dotted 1px;text-underline-offset:3px}
 td.ret button:hover,td.ret button[aria-pressed=true]{border-color:var(--acento);text-decoration:none}
-.curva{margin-top:12px;padding-top:10px;border-top:1px solid var(--borde)}
 .curva .nota b{color:var(--texto);font-weight:600}
 .curva .fuga{color:var(--ambar)}
-.lienzo.bajo{height:180px;margin-top:6px}
+.lienzo.bajo{height:260px;margin-top:6px}
 footer{color:var(--tenue);font-size:12px;text-align:center}
 /* editor */
 dialog{width:min(820px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:0;border:1px solid var(--borde);border-radius:16px;background:var(--panel);color:var(--texto)}
@@ -99,13 +114,23 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
     <button type="button" class="primario" data-accion="sincronizar">Sincronizar con GitHub</button>
     <button type="button" data-accion="descartar">Descartar</button>
   </div>
-  <section class="kpis" id="kpis" aria-label="Comparativa de canales"></section>
-  <section class="graficos">
-    <div class="caja"><h2>Vistas acumuladas</h2><div class="lienzo"><canvas id="g-vistas" role="img" aria-label="Evolución diaria de vistas por canal"></canvas></div></div>
-    <div class="caja"><h2>Suscriptores</h2><div class="lienzo"><canvas id="g-suscriptores" role="img" aria-label="Evolución diaria de suscriptores por canal"></canvas></div></div>
-    <div class="caja"><h2>Retención media (28 días)</h2><div class="lienzo"><canvas id="g-retencion" role="img" aria-label="Evolución diaria de la retención media por canal"></canvas></div></div>
+  <section class="seccion" aria-labelledby="t-canales">
+    <h2 class="titulo-seccion" id="t-canales">Canales · elige uno para ver su detalle</h2>
+    <div class="kpis" id="kpis"></div>
   </section>
-  <section class="videos" id="videos" aria-label="Últimos 5 videos de cada canal, de mayor a menor retención"></section>
+  <section class="seccion" aria-labelledby="t-comparativa">
+    <h2 class="titulo-seccion" id="t-comparativa">Comparativa global entre canales</h2>
+    <div class="graficos">
+      <div class="caja principal"><h2>Vistas acumuladas</h2><div class="lienzo"><canvas id="g-vistas" role="img" aria-label="Evolución diaria de vistas por canal"></canvas></div></div>
+      <div class="caja"><h2>Suscriptores</h2><div class="lienzo"><canvas id="g-suscriptores" role="img" aria-label="Evolución diaria de suscriptores por canal"></canvas></div></div>
+      <div class="caja"><h2>Retención media (28 días)</h2><div class="lienzo"><canvas id="g-retencion" role="img" aria-label="Evolución diaria de la retención media por canal"></canvas></div></div>
+    </div>
+  </section>
+  <section class="seccion" id="inspector" aria-labelledby="t-detalle">
+    <h2 class="titulo-seccion" id="t-detalle">Detalle del canal</h2>
+    <div class="pestanas" id="pestanas" role="group" aria-label="Canal a inspeccionar"></div>
+    <div id="detalle" aria-live="polite"></div>
+  </section>
   <footer>Un punto por día desde que se guarda el histórico · retención = % medio de cada video que se ve (últimos 28 días, YouTube Analytics) · punto junto al nombre: verde = la última ejecución del robot salió bien</footer>
 </main>
 
@@ -181,6 +206,14 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
 
   function activos() { return cfg.canales.filter(function (c) { return !c.proximamente; }); }
 
+  // canal mostrado en el inspector; si desaparece (editado o desactivado) se vuelve al primero
+  var actual = null;
+  function canalActual() {
+    var lista = activos(), c = lista.filter(function (x) { return x.nombre === actual; })[0] || lista[0];
+    actual = c ? c.nombre : null;
+    return c;
+  }
+
   function led(gh) {
     var r = gh && gh.ultima;
     if (!r) return '<span class="led gris" role="img" aria-label="Robot sin datos" title="' + esc((gh && gh.error) || "Sin ejecuciones") + '"></span>';
@@ -190,16 +223,19 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
   }
 
   function pintarKpis() {
+    canalActual();
     $("kpis").innerHTML = activos().map(function (c) {
       var d = DATOS[c.nombre] || {gh: null, yt: {error: "Sin datos aún: llegan tras sincronizar"}};
       var yt = d.yt.error ? {} : d.yt, an = d.an || {error: "Sin datos de Analytics aún"};
       var nombre = yt.url ? '<a href="' + esc(yt.url) + '" target="_blank" rel="noopener">' + esc(c.nombre) + "</a>" : esc(c.nombre);
-      return '<article class="caja kpi" style="--acento:' + color(c.color) + '"><header><h2>' + nombre + "</h2>" + led(d.gh) + "</header>" +
+      var sel = c.nombre === actual;
+      return '<article class="caja kpi' + (sel ? " activo" : "") + '" data-accion="canal" data-canal="' + esc(c.nombre) + '" style="--acento:' + color(c.color) + '"><header><h2>' + nombre + "</h2>" + led(d.gh) + "</header>" +
         '<div class="cifras"><div><b>' + (yt.suscriptores === null ? "oculto" : cifra(yt.suscriptores)) + "</b><small>Suscriptores</small></div>" +
         "<div><b>" + cifra(yt.vistas) + "</b><small>Vistas</small></div>" +
         '<div title="' + esc(an.error || "Duración media vista: " + (an.duracion == null ? "—" : minutos(an.duracion)) + " · últimos 28 días") + '"><b>' +
         pct(an.retencion) + "</b><small>Retención" + (an.duracion == null ? "" : " · " + minutos(an.duracion)) + "</small></div></div>" +
-        (d.yt.error ? '<p class="nota">' + esc(d.yt.error) + "</p>" : "") + "</article>";
+        (d.yt.error ? '<p class="nota">' + esc(d.yt.error) + "</p>" : "") +
+        '<button type="button" class="ver" data-accion="canal" data-canal="' + esc(c.nombre) + '" aria-pressed="' + sel + '">Ver detalle del canal →</button></article>';
     }).join("") || '<p class="nota">No hay canales activos. Pulsa «+ Añadir / Gestionar canales».</p>';
   }
 
@@ -242,37 +278,49 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
     });
   }
 
-  // últimos 5 videos de cada canal, el de mayor retención arriba (los que aún no tienen dato, al final y por fecha);
-  // pulsar su % muestra debajo la curva de retención de ese video
+  // Inspector: últimos videos del canal elegido, el de mayor retención arriba (los que aún no tienen dato, al final y por fecha);
+  // pulsar su % muestra al lado la curva de retención de ese video
   var seleccion = {}, curvas = [];
   function pintarVideos() {
     curvas.forEach(function (g) { g.destroy(); });
     curvas = [];
-    var pendientes = [];
-    $("videos").innerHTML = activos().map(function (c, i) {
-      var d = DATOS[c.nombre] || {yt: {}}, vids = (d.yt && d.yt.videos) || [], ret = (d.an && d.an.por_video) || {};
-      var cur = (d.an && d.an.curvas) || {};
-      if (!vids.length) return "";
-      vids = vids.slice().sort(function (a, b) { return (ret[b.id] == null ? -1 : ret[b.id]) - (ret[a.id] == null ? -1 : ret[a.id]); });
-      var mejor = ret[vids[0].id] != null ? vids[0].id : null;
-      var elegido = vids.filter(function (v) { return cur[v.id] && (v.id === seleccion[c.nombre] || !cur[seleccion[c.nombre]]); })[0];
-      var curva = "";
-      if (elegido) {
-        var f = fuga(cur[elegido.id]), m = momento, dur = elegido.duracion;
-        curva = '<div class="curva"><p class="nota"><b>' + esc(elegido.titulo) + "</b> · " + (f ? '<span class="fuga">mayor fuga ' +
-          m(cur[elegido.id][f.a][0], dur) + "–" + m(cur[elegido.id][f.b][0], dur) + " (−" + Math.round(f.caida * 100) + " pts)</span>" : "sin caídas") +
-          '</p><div class="lienzo bajo"><canvas id="curva-' + i + '" role="img" aria-label="Curva de retención de ' + esc(elegido.titulo) + '"></canvas></div></div>';
-        pendientes.push({id: "curva-" + i, pts: cur[elegido.id], dur: dur, col: color(c.color), f: f});
-      }
-      return '<div class="caja" style="--acento:' + color(c.color) + '"><h2>' + esc(c.nombre) + " · últimos videos</h2><table>" +
-        "<thead><tr><th scope=\"col\">Video</th><th scope=\"col\">Vistas</th><th scope=\"col\">Likes</th><th scope=\"col\">Retención</th></tr></thead><tbody>" +
-        vids.map(function (v) {
-          return "<tr" + (v.id === mejor ? ' class="mejor"' : "") + '><td><a href="https://www.youtube.com/watch?v=' + encodeURIComponent(v.id) +
-            '" target="_blank" rel="noopener">' + esc(v.titulo) + "</a><small>" + esc(fecha(v.fecha, {day: "2-digit", month: "short"})) + "</small></td>" +
-            "<td>" + cifra(v.vistas) + "</td><td>" + cifra(v.likes) + '</td><td class="ret">' + (cur[v.id] ? '<button type="button" data-accion="curva" data-canal="' + esc(c.nombre) + '" data-video="' + esc(v.id) +
-            '" aria-pressed="' + (elegido && v.id === elegido.id) + '" title="Ver la curva de retención">' + pct(ret[v.id]) + "</button>" : pct(ret[v.id])) + "</td></tr>";
-        }).join("") + "</tbody></table>" + curva + "</div>";
+    var pendientes = [], c = canalActual();
+    $("inspector").hidden = !c;
+    if (!c) return;
+    $("pestanas").innerHTML = activos().map(function (x) {
+      return '<button type="button" class="pestana" data-accion="canal" data-canal="' + esc(x.nombre) + '" aria-pressed="' + (x === c) +
+        '" style="--acento:' + color(x.color) + '">' + esc(x.nombre) + "</button>";
     }).join("");
+    $("t-detalle").textContent = "Detalle de " + c.nombre + " — últimos videos y retención";
+    var d = DATOS[c.nombre] || {yt: {}}, vids = (d.yt && d.yt.videos) || [], ret = (d.an && d.an.por_video) || {};
+    var cur = (d.an && d.an.curvas) || {};
+    vids = vids.slice().sort(function (a, b) { return (ret[b.id] == null ? -1 : ret[b.id]) - (ret[a.id] == null ? -1 : ret[a.id]); });
+    var mejor = vids.length && ret[vids[0].id] != null ? vids[0].id : null;
+    var elegido = vids.filter(function (v) { return cur[v.id] && (v.id === seleccion[c.nombre] || !cur[seleccion[c.nombre]]); })[0];
+    var curva;
+    if (elegido) {
+      var f = fuga(cur[elegido.id]), m = momento, dur = elegido.duracion;
+      curva = '<p class="nota"><b>' + esc(elegido.titulo) + "</b> · " + (f ? '<span class="fuga">mayor fuga ' +
+        m(cur[elegido.id][f.a][0], dur) + "–" + m(cur[elegido.id][f.b][0], dur) + " (−" + Math.round(f.caida * 100) + " pts)</span>" : "sin caídas") +
+        '</p><div class="lienzo bajo"><canvas id="curva-detalle" role="img" aria-label="Curva de retención de ' + esc(elegido.titulo) + '"></canvas></div>';
+      pendientes.push({id: "curva-detalle", pts: cur[elegido.id], dur: dur, col: color(c.color), f: f});
+    } else {
+      curva = '<p class="nota vacio">' + (vids.length
+        ? "YouTube Analytics aún está procesando este canal (tarda unas 48 h tras publicar). La curva aparecerá aquí en cuanto haya datos." +
+          (d.an && d.an.error ? "<br><small>" + esc(d.an.error) + "</small>" : "")
+        : "Sin videos publicados todavía: la curva aparece tras el primero.") + "</p>";
+    }
+    var tabla = vids.length ? "<table>" +
+      "<thead><tr><th scope=\"col\">Video</th><th scope=\"col\">Vistas</th><th scope=\"col\">Likes</th><th scope=\"col\">Retención</th></tr></thead><tbody>" +
+      vids.map(function (v) {
+        return "<tr" + (v.id === mejor ? ' class="mejor"' : "") + '><td><a href="https://www.youtube.com/watch?v=' + encodeURIComponent(v.id) +
+          '" target="_blank" rel="noopener">' + esc(v.titulo) + "</a><small>" + esc(fecha(v.fecha, {day: "2-digit", month: "short"})) + "</small></td>" +
+          "<td>" + cifra(v.vistas) + "</td><td>" + cifra(v.likes) + '</td><td class="ret">' + (cur[v.id] ? '<button type="button" data-accion="curva" data-canal="' + esc(c.nombre) + '" data-video="' + esc(v.id) +
+          '" aria-pressed="' + (elegido && v.id === elegido.id) + '" title="Ver la curva de retención">' + pct(ret[v.id]) + "</button>" : pct(ret[v.id])) + "</td></tr>";
+      }).join("") + "</tbody></table>"
+      : '<p class="nota vacio">' + esc((d.yt && d.yt.error) || "Este canal aún no tiene videos publicados.") + "</p>";
+    $("detalle").innerHTML = '<div class="caja detalle" style="--acento:' + color(c.color) + '"><div class="tabla"><h3>Últimos videos</h3>' + tabla +
+      '</div><div class="curva"><h3>Curva de retención</h3>' + curva + "</div></div>";
     if (!window.Chart) return;
     pendientes.forEach(function (g) {
       var enFuga = function (x) { return g.f && x.p0DataIndex >= g.f.a && x.p1DataIndex <= g.f.b; };
@@ -366,6 +414,13 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
     var accion = b.dataset.accion;
     if (accion === "sincronizar") return sincronizar();
     if (accion === "curva") { seleccion[b.dataset.canal] = b.dataset.video; pintarVideos(); return; }
+    if (accion === "canal") {
+      if (ev.target.closest("a")) return;  // el nombre y el punto de la tarjeta son enlaces propios
+      var desdeTarjeta = !!b.closest("#kpis");  // antes de repintar: después b ya no está en el DOM
+      actual = b.dataset.canal; pintarKpis(); pintarVideos();
+      if (desdeTarjeta) $("inspector").scrollIntoView({behavior: "smooth", block: "start"});
+      return;
+    }
     if (accion === "cerrar") return $("editor").close();
     if (accion === "descartar") { cfg = copia(BASE); aviso(""); }
     if (accion === "nuevo") {

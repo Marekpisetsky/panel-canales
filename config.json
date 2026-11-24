@@ -23,7 +23,7 @@
     },
     {
       "nombre": "Vector Cero",
-      "color": "#7aa2ff",
+      "color": "#F5C400",
       "youtube": "@VectorCeroES",
       "repo": "vectorcero/vector-cero",
       "workflow": "vector_cero.yml"
