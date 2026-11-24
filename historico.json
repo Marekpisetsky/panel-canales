@@ -30,15 +30,16 @@
  "2026-11-24": {
   "Archivo Cero": {
    "suscriptores": 3,
-   "vistas": 1790,
-   "retencion": 38.9
+   "vistas": 1857,
+   "retencion": 40.1
   },
   "Clear Ledger": {
    "suscriptores": 0,
-   "vistas": 31
+   "vistas": 34,
+   "retencion": 83.8
   },
   "Vector Cero": {
-   "suscriptores": 0,
+   "suscriptores": 2,
    "vistas": 0
   }
  }
