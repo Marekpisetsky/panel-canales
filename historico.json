@@ -45,18 +45,18 @@
  },
  "2026-11-26": {
   "Archivo Cero": {
-   "suscriptores": 3,
-   "vistas": 1903,
-   "retencion": 41.0
+   "suscriptores": 5,
+   "vistas": 1911,
+   "retencion": 40.9
   },
   "Clear Ledger": {
    "suscriptores": 0,
-   "vistas": 44,
-   "retencion": 81.2
+   "vistas": 47,
+   "retencion": 76.2
   },
   "Vector Cero": {
    "suscriptores": 3,
-   "vistas": 543
+   "vistas": 564
   }
  }
 }
