@@ -40,13 +40,7 @@ jobs:
           YT_ANALYTICS_TOKENS_JSON: ${{ secrets.YT_ANALYTICS_TOKENS_JSON }}
         run: mkdir -p sitio && python actualizar_dashboard.py sitio/index.html
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: sitio
-
-      - id: despliegue
-        uses: actions/deploy-pages@v4
-
+      # Antes del despliegue: si Pages falla, la lectura del día no se pierde (pasó el 25 y 26-nov).
       # Los commits hechos con GITHUB_TOKEN no vuelven a lanzar este workflow, así que no hay bucle.
       - name: Guardar historico.json en el repositorio
         run: |
@@ -57,3 +51,10 @@ jobs:
           git commit -m "Histórico: $(date -u +%F)"
           for intento in 1 2 3; do git pull --rebase && git push && exit 0; sleep 10; done
           exit 1
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: sitio
+
+      - id: despliegue
+        uses: actions/deploy-pages@v5

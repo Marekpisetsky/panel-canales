@@ -44,6 +44,7 @@ button.peligro{color:var(--rojo);border-color:#ff5d5d55}
 .cifras{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .cifras b{display:block;font:650 24px/1.1 var(--mono);letter-spacing:-.02em;overflow-wrap:anywhere}
 .cifras small{color:var(--tenue);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.cifras .baja b,.cifras .baja small{color:var(--rojo)}
 .kpi .nota{margin-top:8px}
 .led{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none;background:var(--c);box-shadow:0 0 10px var(--c)}
 a.led:hover{outline:2px solid var(--c);outline-offset:2px}
@@ -232,7 +233,7 @@ textarea{width:100%;min-height:200px;font:12px/1.4 var(--mono);color:var(--texto
       return '<article class="caja kpi' + (sel ? " activo" : "") + '" data-accion="canal" data-canal="' + esc(c.nombre) + '" style="--acento:' + color(c.color) + '"><header><h2>' + nombre + "</h2>" + led(d.gh) + "</header>" +
         '<div class="cifras"><div><b>' + (yt.suscriptores === null ? "oculto" : cifra(yt.suscriptores)) + "</b><small>Suscriptores</small></div>" +
         "<div><b>" + cifra(yt.vistas) + "</b><small>Vistas</small></div>" +
-        '<div title="' + esc(an.error || "Duración media vista: " + (an.duracion == null ? "—" : minutos(an.duracion)) + " · últimos 28 días") + '"><b>' +
+        '<div' + (an.retencion != null && an.retencion < 35 ? ' class="baja"' : "") + ' title="' + esc(an.error || "Duración media vista: " + (an.duracion == null ? "—" : minutos(an.duracion)) + " · últimos 28 días") + '"><b>' +
         pct(an.retencion) + "</b><small>Retención" + (an.duracion == null ? "" : " · " + minutos(an.duracion)) + "</small></div></div>" +
         (d.yt.error ? '<p class="nota">' + esc(d.yt.error) + "</p>" : "") +
         '<button type="button" class="ver" data-accion="canal" data-canal="' + esc(c.nombre) + '" aria-pressed="' + sel + '">Ver detalle del canal →</button></article>';

@@ -38,6 +38,20 @@ assert p.datos_analytics({"nombre": "A"}, {"id": "UC"}, None) == {"error": "Anal
 os.environ["YT_ANALYTICS_TOKENS_JSON"] = "{roto"
 assert "no es JSON" in p.datos_analytics({"nombre": "A"}, {"id": "UC"}, None)["error"]
 
+# Lista de subidas inexistente (canal sin videos públicos) → sin videos; cualquier otro error sigue saliendo.
+def falla(msg):
+    def f(*a, **k):
+        raise RuntimeError(msg)
+    return f
+p.youtube = falla("HTTP 404: playlistNotFound")
+assert p.ultimos_videos("UU") == []
+p.youtube = falla("HTTP 403: quotaExceeded")
+try:
+    p.ultimos_videos("UU")
+    raise AssertionError("un 403 no debe ocultarse")
+except RuntimeError:
+    pass
+
 # Duraciones ISO 8601 de YouTube.
 assert [p.segundos(x) for x in ("PT45S", "PT1M5S", "PT1H0M2S", "P1DT1S", "P0D", "PT", "")] == [45, 65, 3602, 86401, 0, None, None]
 

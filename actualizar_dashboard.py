@@ -96,14 +96,19 @@ def datos_youtube(canal):
         "suscriptores": None if s.get("hiddenSubscriberCount") else int(s.get("subscriberCount", 0)),
         "vistas": int(s.get("viewCount", 0)),
         "id": items[0]["id"],
-        # sin videos públicos la lista de subidas no existe (404 playlistNotFound)
-        "videos": ultimos_videos(items[0]["contentDetails"]["relatedPlaylists"]["uploads"]) if int(s.get("videoCount", 0)) else [],
+        # no se mira videoCount: en canales nuevos tarda días en dejar de valer 0 aunque ya haya videos
+        "videos": ultimos_videos(items[0]["contentDetails"]["relatedPlaylists"]["uploads"]),
     }
 
 
 def ultimos_videos(lista_subidas, n=5):
-    ids = [i["contentDetails"]["videoId"]
-           for i in youtube("playlistItems", part="contentDetails", playlistId=lista_subidas, maxResults=n).get("items", [])]
+    try:
+        items = youtube("playlistItems", part="contentDetails", playlistId=lista_subidas, maxResults=n).get("items", [])
+    except RuntimeError as e:
+        if not str(e).startswith("HTTP 404"):
+            raise
+        items = []  # sin videos públicos la lista de subidas no existe (404 playlistNotFound)
+    ids = [i["contentDetails"]["videoId"] for i in items]
     if not ids:
         return []
     vids = youtube("videos", part="snippet,statistics,contentDetails", id=",".join(ids)).get("items", [])
